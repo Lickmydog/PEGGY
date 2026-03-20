@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0b0e15">
+<title>Peggy's Garage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0b0e15;--surface:#131720;--card:#1a1f2e;--card2:#1f2535;
+  --border:#272d3d;--border2:#313849;
+  --accent:#2563eb;--accent2:#1d4ed8;
+  --critical:#ef4444;--urgent:#f59e0b;--normal:#3b82f6;--done:#22c55e;--low:#6b7280;
+  --text:#e8edf5;--text2:#8892a6;--text3:#404858;
+  --fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --tab-h:64px;--header-h:90px;--r:10px;--r2:6px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+#header{flex-shrink:0;height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 18px;position:relative;overflow:hidden}
+#header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);opacity:.25;pointer-events:none}
+.hcar{width:52px;height:52px;background:linear-gradient(135deg,var(--accent) 0%,#1e40af 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 0 0 2px var(--border2)}
+.hreg{font-family:var(--fm);font-size:11px;letter-spacing:.05em;color:var(--text2);background:var(--card);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;margin-bottom:3px;display:inline-block}
+.hname{font-family:var(--fh);font-size:22px;font-weight:700;letter-spacing:.02em;line-height:1}
+.hdetail{font-size:12px;color:var(--text2);margin-top:2px}
+.hstatus{margin-left:auto;text-align:right;flex-shrink:0}
+.hmi{font-family:var(--fm);font-size:15px;font-weight:500;color:var(--text);line-height:1}
+.hmilab{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+#screens{flex:1;overflow:hidden;position:relative}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:16px 16px 80px;display:none;animation:fadeUp .2s ease}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+#tabbar{flex-shrink:0;height:var(--tab-h);background:var(--surface);border-top:1px solid var(--border);display:flex;position:relative;z-index:10}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:color .15s;color:var(--text3);border:none;background:none;font-family:var(--fb)}
+.tab.active{color:var(--accent)}
+.tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab span{font-size:9px;font-weight:500;letter-spacing:.04em}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:4px}
+.sec-title{font-family:var(--fh);font-size:20px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.sec-count{font-family:var(--fm);font-size:11px;color:var(--text2);background:var(--card);border:1px solid var(--border);border-radius:4px;padding:2px 7px}
+.add-btn{width:34px;height:34px;background:var(--accent);border:none;border-radius:var(--r2);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;transition:background .15s;flex-shrink:0}
+.add-btn:active{background:var(--accent2)}
+.pills{display:flex;gap:7px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{flex-shrink:0;font-family:var(--fh);font-size:13px;font-weight:600;letter-spacing:.04em;padding:5px 13px;border-radius:20px;border:1px solid var(--border2);cursor:pointer;transition:all .15s;color:var(--text2);background:var(--card);text-transform:uppercase}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.jbtn{font-family:var(--fh);font-size:13px;font-weight:600;letter-spacing:.04em;padding:6px 14px;border-radius:var(--r2);border:none;cursor:pointer;transition:background .15s}
+.jbtn.done-btn{background:rgba(34,197,94,.15);color:var(--done);border:1px solid rgba(34,197,94,.3)}
+.jbtn.edit-btn{background:var(--card2);color:var(--text2);border:1px solid var(--border2)}
+.jbtn.del-btn{background:rgba(239,68,68,.1);color:var(--critical);border:1px solid rgba(239,68,68,.2);margin-left:auto}
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-text{font-family:var(--fh);font-size:16px;letter-spacing:.04em;text-transform:uppercase}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* JOB CARDS */
+.job-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:var(--r);padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:background .15s;position:relative}
+.job-card:active{background:var(--card2)}
+.job-card.p-critical{border-left-color:var(--critical)}
+.job-card.p-urgent{border-left-color:var(--urgent)}
+.job-card.p-normal{border-left-color:var(--normal)}
+.job-card.p-done{border-left-color:var(--done);opacity:.6}
+.job-card.p-low{border-left-color:var(--low)}
+.job-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.job-title{font-family:var(--fh);font-size:16px;font-weight:700;letter-spacing:.02em;line-height:1.2;flex:1}
+.badge{font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:3px;text-transform:uppercase;flex-shrink:0}
+.badge.critical{background:rgba(239,68,68,.18);color:var(--critical);border:1px solid rgba(239,68,68,.3)}
+.badge.urgent{background:rgba(245,158,11,.15);color:var(--urgent);border:1px solid rgba(245,158,11,.25)}
+.badge.normal{background:rgba(59,130,246,.15);color:var(--normal);border:1px solid rgba(59,130,246,.25)}
+.badge.done{background:rgba(34,197,94,.15);color:var(--done);border:1px solid rgba(34,197,94,.25)}
+.badge.low{background:rgba(107,114,128,.15);color:var(--low);border:1px solid rgba(107,114,128,.25)}
+.job-meta{display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap}
+.cat-tag{font-size:11px;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:2px 7px;font-family:var(--fh);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.job-cost{font-family:var(--fm);font-size:12px;color:var(--text2)}
+.job-expand{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.job-expand.open{display:block}
+.job-parts{font-size:13px;color:var(--text2);margin-bottom:6px}
+.job-parts strong{color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block;margin-bottom:2px}
+.job-notes{font-size:12px;color:var(--text3);font-style:italic;margin-bottom:6px}
+.job-actual{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.job-actual label{font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;white-space:nowrap}
+.job-actual input{background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 8px;color:var(--text);font-family:var(--fm);font-size:13px;width:90px;outline:none}
+.job-actual input:focus{border-color:var(--accent)}
+.job-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* DASHBOARD */
+.dv-row{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px}
+.dv-stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;text-align:center}
+.dv-stat-val{font-family:var(--fm);font-size:17px;font-weight:500;line-height:1}
+.dv-stat-lab{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+.dv-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dv-kv{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}
+.dv-k{color:var(--text3);font-size:11px}
+.dv-v{font-family:var(--fm);font-size:11px;color:var(--text2);text-align:right}
+.budget-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
+.bud-title{font-family:var(--fh);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px}
+.bud-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.bud-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:11px 12px}
+.bud-col-label{font-family:var(--fh);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin-bottom:5px}
+.bud-col-total{font-family:var(--fm);font-size:22px;font-weight:500;line-height:1}
+.bud-col-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.bud-bar-wrap{background:var(--surface);border-radius:4px;height:6px;margin:0 0 8px;overflow:hidden;display:flex;gap:2px}
+.bud-seg{height:100%;border-radius:2px}
+.bud-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.bud-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.bud-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.bud-variance{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)}
+.bud-variance-val{font-family:var(--fm);font-size:13px}
+.bud-variance-val.under{color:var(--done)}
+.bud-variance-val.over{color:var(--critical)}
+.urgent-strip-title{font-family:var(--fh);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:8px}
+
+/* PARTS */
+.parts-group-title{font-family:var(--fh);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.parts-group-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.part-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.part-card-header{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;cursor:pointer;transition:background .15s}
+.part-card-header:active{background:var(--card2)}
+.part-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.part-status-dot.needed{background:var(--bg);border:2px solid var(--border2)}
+.part-status-dot.ordered{background:var(--urgent)}
+.part-status-dot.arrived{background:var(--normal)}
+.part-status-dot.fitted{background:var(--done)}
+.part-info{flex:1;min-width:0}
+.part-name{font-family:var(--fh);font-size:15px;font-weight:700;letter-spacing:.02em;line-height:1.2}
+.part-spec{font-size:12px;color:var(--text2);margin-top:3px;font-family:var(--fm)}
+.part-supplier{font-size:11px;color:var(--text3);margin-top:2px}
+.part-price-badge{font-family:var(--fm);font-size:12px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:3px 8px;flex-shrink:0;align-self:flex-start}
+.part-expand{display:none;border-top:1px solid var(--border);padding:12px 14px}
+.part-expand.open{display:block}
+.part-notes-text{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5;font-style:italic}
+.part-expand-label{font-family:var(--fh);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px}
+.part-status-btns{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
+.psb{font-family:var(--fh);font-size:12px;font-weight:700;letter-spacing:.05em;padding:7px 14px;border-radius:var(--r2);cursor:pointer;text-transform:uppercase;transition:all .15s;background:var(--surface);color:var(--text3);border:1px solid var(--border)}
+.psb:hover{border-color:var(--border2);color:var(--text2)}
+.psb.a-ordered{background:rgba(245,158,11,.15);color:var(--urgent);border-color:var(--urgent)}
+.psb.a-arrived{background:rgba(59,130,246,.15);color:var(--normal);border-color:var(--normal)}
+.psb.a-fitted{background:rgba(34,197,94,.15);color:var(--done);border-color:var(--done)}
+.psb.a-needed{background:rgba(107,114,128,.12);color:var(--low);border-color:var(--low)}
+.part-actions{display:flex;gap:8px}
+
+/* MODS */
+.mod-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.mod-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.mod-name{font-family:var(--fh);font-size:17px;font-weight:700;letter-spacing:.02em}
+.mod-cat{font-family:var(--fh);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-top:4px}
+.mod-cost{font-family:var(--fm);font-size:14px;color:var(--urgent)}
+.mod-desc{font-size:13px;color:var(--text2);margin-top:8px;line-height:1.5}
+.mod-status-btn{margin-top:10px;display:inline-block;font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 12px;border-radius:3px;text-transform:uppercase;cursor:pointer;background:var(--card2);color:var(--text2);border:1px solid var(--border2)}
+
+/* PHOTOS */
+.photo-upload-area{border:2px dashed var(--border2);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;margin-bottom:14px;transition:border-color .15s;position:relative}
+.photo-upload-area:hover{border-color:var(--accent)}
+.photo-upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.photo-upload-label{font-family:var(--fh);font-size:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
+.photo-upload-sub{font-size:12px;color:var(--text3);margin-top:4px}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.photo-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.photo-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.photo-footer{padding:8px 10px}
+.photo-caption-input{background:transparent;border:none;outline:none;color:var(--text2);font-size:12px;font-family:var(--fb);width:100%;resize:none;line-height:1.4}
+.photo-meta{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.photo-date{font-family:var(--fm);font-size:10px;color:var(--text3)}
+.photo-del{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:3px;color:var(--critical);font-size:11px;cursor:pointer;padding:2px 7px;font-family:var(--fh);font-weight:700;letter-spacing:.04em}
+
+/* LOG */
+.log-entry{display:flex;gap:14px;margin-bottom:16px;position:relative}
+.log-entry::before{content:'';position:absolute;left:15px;top:32px;bottom:-16px;width:1px;background:var(--border)}
+.log-entry:last-child::before{display:none}
+.log-dot{width:30px;height:30px;border-radius:50%;background:var(--done);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;z-index:1}
+.log-content{flex:1;padding-bottom:6px}
+.log-day{font-family:var(--fh);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:6px}
+.log-item{font-size:14px;color:var(--text);margin-bottom:4px;line-height:1.4;padding-left:12px;border-left:2px solid var(--done)}
+.log-item.finding{border-left-color:var(--urgent)}
+
+/* SETTINGS */
+.settings-section{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.settings-title{font-family:var(--fh);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:12px}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.settings-row:last-child{border-bottom:none}
+.settings-row-label{color:var(--text2)}
+.settings-row-val{font-family:var(--fm);font-size:11px;color:var(--text3)}
+.sql-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:12px;font-family:var(--fm);font-size:10px;color:var(--text3);white-space:pre-wrap;word-break:break-word;line-height:1.6;margin-top:8px;max-height:160px;overflow-y:auto}
+.copy-btn{font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:.05em;padding:5px 12px;background:var(--card2);border:1px solid var(--border2);border-radius:3px;color:var(--text2);cursor:pointer;margin-top:8px;text-transform:uppercase}
+
+/* MODAL */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:flex-end;justify-content:center;max-width:480px;margin:0 auto}
+#modal-overlay.open{display:flex}
+#modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r) var(--r) 0 0;width:100%;max-height:88vh;overflow-y:auto;padding:20px 18px 48px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{font-family:var(--fh);font-size:22px;font-weight:700;letter-spacing:.04em;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{width:30px;height:30px;background:var(--card2);border:none;border-radius:50%;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.form-field{margin-bottom:14px}
+.form-label{font-family:var(--fh);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:5px;display:block}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--card);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 12px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
+.form-textarea{resize:none;height:70px;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-submit{width:100%;background:var(--accent);border:none;border-radius:var(--r2);padding:13px;color:#fff;font-family:var(--fh);font-size:16px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
+.form-submit:active{background:var(--accent2)}
+#sb-banner{background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.3);border-radius:var(--r2);padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px}
+#sb-banner.hidden{display:none}
+.sb-text{flex:1;font-size:13px;color:var(--text2);line-height:1.5}
+.sb-text strong{color:var(--accent);font-family:var(--fh);letter-spacing:.03em}
+.sb-btn{font-family:var(--fh);font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 12px;background:var(--accent);border:none;border-radius:3px;color:#fff;cursor:pointer;white-space:nowrap;margin-top:6px;display:inline-block}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div class="hcar">🚗</div>
+    <div>
+      <div class="hreg">X139 AGW</div>
+      <div class="hname">PEGGY</div>
+      <div class="hdetail">306 1.9D XUD9 · Blue · 2000</div>
+    </div>
+    <div class="hstatus">
+      <div class="hmi">84,137</div>
+      <div class="hmilab">miles</div>
+    </div>
+  </div>
+
+  <div id="screens">
+    <div class="screen active" id="screen-dash">
+      <div id="sb-banner" class="hidden">
+        <span style="font-size:18px;flex-shrink:0">☁️</span>
+        <div><div class="sb-text"><strong>Connect Supabase</strong> to sync across devices. Currently using device storage.</div>
+        <button class="sb-btn" onclick="showScreen('settings')">Configure →</button></div>
+      </div>
+      <div id="dash-vehicle"></div>
+      <div id="dash-budget"></div>
+      <div class="urgent-strip-title">⚠ Urgent &amp; Critical</div>
+      <div id="dash-urgent"></div>
+    </div>
+
+    <div class="screen" id="screen-jobs">
+      <div class="sec-hd">
+        <span class="sec-title">Jobs</span>
+        <div style="display:flex;gap:8px"><span class="sec-count" id="jobs-count">0</span><button class="add-btn" onclick="openAddJob()">+</button></div>
+      </div>
+      <div class="pills" id="jobs-pills"></div>
+      <div id="jobs-list"></div>
+    </div>
+
+    <div class="screen" id="screen-parts">
+      <div class="sec-hd">
+        <span class="sec-title">Parts</span>
+        <div style="display:flex;gap:8px"><span class="sec-count" id="parts-count">0</span><button class="add-btn" onclick="openAddPart()">+</button></div>
+      </div>
+      <div id="parts-list"></div>
+    </div>
+
+    <div class="screen" id="screen-mods">
+      <div class="sec-hd">
+        <span class="sec-title">Mods</span>
+        <div style="display:flex;gap:8px"><span class="sec-count" id="mods-count">0</span><button class="add-btn" onclick="openAddMod()">+</button></div>
+      </div>
+      <div id="mods-list"></div>
+    </div>
+
+    <div class="screen" id="screen-log">
+      <div class="sec-hd">
+        <span class="sec-title">Photos</span>
+        <span class="sec-count" id="photos-count">0 photos</span>
+      </div>
+      <label class="photo-upload-area">
+        <input type="file" accept="image/*" multiple onchange="handlePhotos(this.files)">
+        <div class="photo-upload-label">📷 Add Progress Photos</div>
+        <div class="photo-upload-sub">Tap to choose from camera roll · also accepts direct camera</div>
+      </label>
+      <div class="photo-grid" id="photo-grid"></div>
+      <div class="sec-hd" style="margin-top:4px">
+        <span class="sec-title">Build Log</span>
+        <span class="sec-count" id="log-count">0</span>
+      </div>
+      <div id="log-list"></div>
+    </div>
+
+    <div class="screen" id="screen-settings">
+      <div class="sec-hd"><span class="sec-title">Settings</span></div>
+      <div class="settings-section">
+        <div class="settings-title">Vehicle Info</div>
+        <div class="settings-row"><span class="settings-row-label">Registration</span><span class="settings-row-val">X139 AGW</span></div>
+        <div class="settings-row"><span class="settings-row-label">Engine</span><span class="settings-row-val">1.9D XUD9 70bhp</span></div>
+        <div class="settings-row"><span class="settings-row-label">VIN (last 5)</span><span class="settings-row-val">15369</span></div>
+        <div class="settings-row"><span class="settings-row-label">Purchased</span><span class="settings-row-val">March 2026 · £570</span></div>
+        <div class="settings-row"><span class="settings-row-label">MOT expired</span><span class="settings-row-val">June 2018</span></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Supabase Cloud Sync</div>
+        <div class="form-field"><label class="form-label">Project URL</label><input class="form-input" id="sb-url" placeholder="https://xxxx.supabase.co"></div>
+        <div class="form-field"><label class="form-label">Anon Key</label><input class="form-input" id="sb-key" placeholder="eyJ..." type="password"></div>
+        <button class="form-submit" style="margin-top:0" onclick="saveSupabase()">Connect &amp; Sync</button>
+        <div class="settings-title" style="margin-top:18px">Supabase SQL</div>
+        <div class="sql-box" id="sql-box"></div>
+        <button class="copy-btn" onclick="copySQL()">Copy SQL</button>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Data</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="copy-btn" onclick="exportData()">Export JSON</button>
+          <button class="copy-btn" style="color:var(--critical);border-color:rgba(239,68,68,.3)" onclick="resetData()">Reset to Defaults</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav id="tabbar">
+    <button class="tab active" data-screen="dash" onclick="showScreen('dash')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Dash</span>
+    </button>
+    <button class="tab" data-screen="jobs" onclick="showScreen('jobs')">
+      <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <span>Jobs</span>
+    </button>
+    <button class="tab" data-screen="parts" onclick="showScreen('parts')">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span>Parts</span>
+    </button>
+    <button class="tab" data-screen="mods" onclick="showScreen('mods')">
+      <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span>Mods</span>
+    </button>
+    <button class="tab" data-screen="log" onclick="showScreen('log')">
+      <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>Log</span>
+    </button>
+  </nav>
+</div>
+
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal" onclick="event.stopPropagation()">
+    <div class="modal-title"><span id="modal-title-text">Add</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ══ SEED DATA ══
+const DEFAULT_JOBS = [
+  {id:'j1',title:'Cambelt + tensioner',category:'safety',priority:'critical',status:'todo',actualCost:null,parts:'Cambelt kit for XUD9 — unknown history',costMin:40,costMax:350,notes:'CRITICAL failure risk. DIY possible — otherwise book garage. Check 306oc.co.uk for guide.'},
+  {id:'j2',title:'Front shock absorbers x2',category:'safety',priority:'urgent',status:'todo',actualCost:null,parts:'Koni STR.T KST14 kit (includes springs) — Larkspeed 0113 264 3231 £394',costMin:394,costMax:394,notes:'Confirmed leaking. Kit includes matched springs — 40mm front drop.'},
+  {id:'j3',title:'Front coil springs x2',category:'safety',priority:'urgent',status:'todo',actualCost:null,parts:'Included in Koni STR.T KST14 kit',costMin:0,costMax:0,notes:'Included in Koni kit above. Corroded — replace with shocks.'},
+  {id:'j4',title:'CV joint gaiters x2',category:'safety',priority:'urgent',status:'todo',actualCost:null,parts:'Split CV gaiter kit x4 (inner + outer both sides)',costMin:40,costMax:60,notes:'Both sides failed. Split type avoids driveshaft removal.'},
+  {id:'j5',title:'Front lower ball joint — offside',category:'safety',priority:'urgent',status:'todo',actualCost:null,parts:'Ball joint for 306 1.9D',costMin:20,costMax:40,notes:'MOT advisory. Check nearside too.'},
+  {id:'j6',title:'All 4 tyres',category:'safety',priority:'urgent',status:'todo',actualCost:null,parts:'185/65 R14 x4',costMin:100,costMax:160,notes:'All perished. Marton Mobile Tyres: 07896 729021. HS Mobile (24/7): 07869 572503.'},
+  {id:'j7',title:'Rear brakes — shoes & cylinders',category:'safety',priority:'urgent',status:'todo',actualCost:null,parts:'203x38mm brake shoes, wheel cylinders + drums if scored',costMin:30,costMax:80,notes:'MOT fail 2017. Use reg X139AGW at Euro Car Parts Stockton 01642 525282.'},
+  {id:'j8',title:'Full oil service',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'5W-40 semi-synthetic 5L + filter (4.5L capacity)',costMin:27,costMax:27,notes:'Use reg at Euro Car Parts. Drain sump fully before refill.'},
+  {id:'j9',title:'Fuel filter replacement',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'306 1.9D specific fuel filter',costMin:10,costMax:10,notes:'Bleed system after — crack bleed screw, crank until fuel flows.'},
+  {id:'j10',title:'Air filter replacement',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'306 1.9D specific air filter',costMin:8,costMax:15,notes:''},
+  {id:'j11',title:'Coolant flush',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'OAT coolant concentrate (pink/red) 2L + distilled water 2L',costMin:10,costMax:10,notes:'50/50 mix. DO NOT open system when hot.'},
+  {id:'j12',title:'Brake fluid flush',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'DOT 4 500ml',costMin:5,costMax:5,notes:'Pump pedal after brake work.'},
+  {id:'j13',title:'Glow plugs x4',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'Set of 4 for XUD9',costMin:20,costMax:40,notes:'Apply penetrating oil 10 mins before removing. Heat block if seized.'},
+  {id:'j14',title:'Power steering fluid check',category:'mechanical',priority:'low',status:'todo',actualCost:null,parts:'CHF 11S or Dexron — check cap',costMin:5,costMax:5,notes:''},
+  {id:'j15',title:'Steering rack — seeping',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'May need replacement rack',costMin:80,costMax:250,notes:'2011 advisory. Monitor — replace if steering vague or fluid dropping.'},
+  {id:'j16',title:'Battery — test first',category:'mechanical',priority:'normal',status:'todo',actualCost:null,parts:'Lion 075 60Ah 520CCA+ if current fails',costMin:0,costMax:65,notes:'Halfords Cleveland Retail Park TS6 6DU — free test.'},
+  {id:'j17',title:'Scuttle leaf guard',category:'water',priority:'normal',status:'todo',actualCost:null,parts:'Mesh or foam strip',costMin:5,costMax:10,notes:'Prevent future blockage — root cause of all water damage.'},
+  {id:'j18',title:'Treat inner wing rust',category:'water',priority:'normal',status:'todo',actualCost:null,parts:'Kurust + Waxoyl',costMin:16,costMax:25,notes:'Kurust first, cure, then Waxoyl. Never WD40 as rust treatment.'},
+  {id:'j19',title:'Door seals all round',category:'water',priority:'normal',status:'todo',actualCost:null,parts:'Replacement rubber door seals x4',costMin:20,costMax:40,notes:'All perished. Clean channels before fitting.'},
+  {id:'j20',title:'Headlight water ingress',category:'water',priority:'normal',status:'todo',actualCost:null,parts:'Clear silicone sealant or replacement units',costMin:5,costMax:50,notes:'Dry thoroughly, reseal. Replace if cracked.'},
+  {id:'j21',title:'Sunroof seal + drain tubes',category:'water',priority:'normal',status:'todo',actualCost:null,parts:'Sunroof seal rubber if perished',costMin:5,costMax:30,notes:'Clear all 4 corner drain tubes with thin wire or compressed air.'},
+  {id:'j22',title:'Bulkhead rust — monitor',category:'water',priority:'low',status:'todo',actualCost:null,parts:'Hammerite blue if needed',costMin:0,costMax:10,notes:'Hammerite applied Day 1 ✅'},
+  {id:'j23',title:'Firewall foam — replace',category:'interior',priority:'normal',status:'todo',actualCost:null,parts:'FR automotive insulation foam',costMin:15,costMax:25,notes:'Remove saturated foam, replace with fire-rated closed-cell foam.'},
+  {id:'j24',title:'Floor treatment + matting',category:'interior',priority:'normal',status:'todo',actualCost:null,parts:'Kurust + Waxoyl + rubber matting',costMin:31,costMax:50,notes:'Floor solid, factory underseal intact. Fit matting when dry.'},
+  {id:'j25',title:'Seats — clean mould',category:'interior',priority:'normal',status:'todo',actualCost:null,parts:'Vinegar solution + fabric cleaner',costMin:5,costMax:15,notes:'Surface mould only — seats excellent condition. Clean outside.'},
+  {id:'j26',title:'Seat runners — treat rust',category:'interior',priority:'low',status:'todo',actualCost:null,parts:'WD40, Kurust, GT85',costMin:10,costMax:10,notes:'Free up, treat, protect with GT85.'},
+  {id:'j27',title:'Headlining — recover',category:'interior',priority:'low',status:'todo',actualCost:null,parts:'Black automotive fabric + adhesive',costMin:20,costMax:35,notes:'Check 306oc.co.uk for step-by-step guide.'},
+  {id:'j28',title:'Door cards — clean or reupholster',category:'interior',priority:'low',status:'todo',actualCost:null,parts:'Matching or black automotive fabric',costMin:50,costMax:100,notes:'Clean first. Reupholster if cleaning not sufficient.'},
+  {id:'j29',title:'Boot release cable — reconnect',category:'interior',priority:'normal',status:'todo',actualCost:null,parts:'Boot release cable if broken',costMin:5,costMax:10,notes:'Currently disconnected.'},
+  {id:'j30',title:'Driver door replacement',category:'bodywork',priority:'urgent',status:'todo',actualCost:null,parts:'Matching blue 5-door offside door — eBay/Facebook',costMin:50,costMax:150,notes:'Heavily damaged. Check 306oc.co.uk classifieds.'},
+  {id:'j31',title:'Waxoyl underside',category:'bodywork',priority:'normal',status:'todo',actualCost:null,parts:'Waxoyl underbody kit',costMin:20,costMax:40,notes:'Do once all mechanicals done. Always use axle stands.'},
+  {id:'j32',title:'Wheels — paint white steelies',category:'bodywork',priority:'low',status:'todo',actualCost:null,parts:'Rattle can white + primer',costMin:20,costMax:60,notes:'4x108 PCD. Clean and prime first.'},
+  {id:'j33',title:'Full respray — blue',category:'bodywork',priority:'low',status:'todo',actualCost:null,parts:'Find paint code in engine bay',costMin:800,costMax:1500,notes:'Photograph paint code sticker in engine bay before any bodywork.'},
+  {id:'j34',title:'Door locks — free up seized',category:'security',priority:'urgent',status:'todo',actualCost:null,parts:'GT85 / WD40 / Plus Gas',costMin:5,costMax:5,notes:'Daily treatment until freed. All 3 doors + boot seized.'},
+  {id:'j35',title:'Key fob — source and code',category:'security',priority:'normal',status:'todo',actualCost:null,parts:'Phase 3 RF fob for 306',costMin:65,costMax:110,notes:'Code via auto locksmith. Plain key only now.'},
+  {id:'j36',title:'Head unit',category:'audio',priority:'low',status:'todo',actualCost:null,parts:'Single DIN CarPlay/Android Auto + ISO adaptor £5 + aerial adaptor £3',costMin:60,costMax:300,notes:''},
+  {id:'j37',title:'Speakers front + rear',category:'audio',priority:'low',status:'todo',actualCost:null,parts:'165mm (6.5") x4',costMin:50,costMax:100,notes:'Both front and rear 165mm. No adaptor rings needed.'},
+  {id:'j38',title:'MOT — book when safe',category:'admin',priority:'normal',status:'todo',actualCost:null,parts:'',costMin:55,costMax:55,notes:'Book once safety items done.'},
+  {id:'j39',title:'Insurance — before road use',category:'admin',priority:'critical',status:'todo',actualCost:null,parts:'',costMin:0,costMax:0,notes:'Must arrange before moving on road.'},
+  {id:'j40',title:'DVLA — notify off SORN',category:'admin',priority:'normal',status:'todo',actualCost:null,parts:'',costMin:0,costMax:0,notes:'Tax once MOT obtained.'},
+  {id:'j41',title:'Private plate GN4RLY',category:'admin',priority:'low',status:'todo',actualCost:null,parts:'',costMin:80,costMax:80,notes:'dvlaregistrations.dvla.gov.uk — £80 transfer fee.'},
+];
+
+const DEFAULT_PARTS = [
+  {id:'p1',name:'Engine oil',spec:'5W-40 semi-synthetic, 4.5L capacity',qty:1,price:'~£15',supplier:'Euro Car Parts / Halfords',status:'needed',notes:'Use reg X139AGW for exact spec. 4.5L total capacity.'},
+  {id:'p2',name:'Oil filter',spec:'306 1.9D specific — use reg X139AGW',qty:1,price:'~£8',supplier:'Euro Car Parts 01642 525282',status:'needed',notes:'Always use reg number for exact fit.'},
+  {id:'p3',name:'Tyres 185/65 R14',spec:'185/65 R14 x4 — part-worns OK for now',qty:4,price:'£100–160 set',supplier:'Marton Mobile Tyres 07896 729021',status:'needed',notes:'HS Mobile Tyres 07869 572503 also available 24/7.'},
+  {id:'p4',name:'Rear brake shoes',spec:'203x38mm set',qty:1,price:'~£20',supplier:'Euro Car Parts — use reg',status:'needed',notes:'Check wheel cylinders and drums at same time. Replace if scored.'},
+  {id:'p5',name:'Wheel cylinders',spec:'Rear — inspect condition first',qty:2,price:'~£25',supplier:'Euro Car Parts',status:'needed',notes:'Replace if leaking or corroded.'},
+  {id:'p6',name:'CV gaiter kit',spec:'Split universal type, inner + outer x2 sides',qty:4,price:'£10–15 each',supplier:'eBay / Euro Car Parts',status:'needed',notes:'Split type avoids full driveshaft removal. Easier DIY.'},
+  {id:'p7',name:'Front lower ball joint',spec:'Offside — 306 1.9D',qty:1,price:'£20–40',supplier:'Euro Car Parts — use reg',status:'needed',notes:'Check nearside while apart. MOT advisory item.'},
+  {id:'p8',name:'Cambelt kit',spec:'XUD9 specific including tensioner',qty:1,price:'£40–80',supplier:'Euro Car Parts / Motor Parts Direct 01642 548260',status:'needed',notes:'CRITICAL — unknown change history. Do not delay.'},
+  {id:'p9',name:'Koni STR.T KST14',spec:'Front shocks + springs kit — 1120-1010A',qty:1,price:'£394',supplier:'Larkspeed 0113 264 3231',status:'needed',notes:'On sale (was £493). Confirm fitment on 1.9D before ordering.'},
+  {id:'p10',name:'Glow plugs x4',spec:'Set of 4 for XUD9',qty:4,price:'£20–40',supplier:'Euro Car Parts — use reg',status:'needed',notes:'Apply penetrating oil before removing. Heat block gently if seized.'},
+  {id:'p11',name:'Fuel filter',spec:'306 1.9D specific',qty:1,price:'~£10',supplier:'Euro Car Parts — use reg',status:'needed',notes:'Bleed fuel system after fitting.'},
+  {id:'p12',name:'Air filter',spec:'306 1.9D specific',qty:1,price:'£8–15',supplier:'Euro Car Parts / Halfords',status:'needed',notes:''},
+  {id:'p13',name:'Coolant OAT concentrate',spec:'Pink/red OAT type + distilled water',qty:1,price:'~£10',supplier:'Euro Car Parts / Halfords',status:'needed',notes:'50/50 mix only. Dispose of old coolant responsibly.'},
+  {id:'p14',name:'Brake fluid DOT 4',spec:'DOT 4, 500ml',qty:1,price:'~£5',supplier:'Any motor factor',status:'needed',notes:''},
+  {id:'p15',name:'Kurust',spec:'500ml',qty:1,price:'~£8',supplier:'Halfords / Motive Car Accessories 01642 300944',status:'needed',notes:'DO NOT use WD40 as rust treatment — Kurust then Waxoyl.'},
+  {id:'p16',name:'Waxoyl underbody',spec:'Underbody + cavity wax',qty:1,price:'~£15',supplier:'Halfords',status:'needed',notes:'Apply after all mechanicals finished.'},
+  {id:'p17',name:'Battery 075',spec:'075 group, 60Ah, 520CCA minimum',qty:1,price:'£55–70',supplier:'Halfords — FREE test first',status:'needed',notes:'Take existing battery to Halfords for free test before buying.'},
+  {id:'p18',name:'ISO harness adaptor',spec:'Peugeot 306 specific',qty:1,price:'~£5',supplier:'eBay / Halfords',status:'needed',notes:'Needed for head unit install.'},
+];
+
+const DEFAULT_MODS = [
+  {id:'m1',name:'Turbo conversion',category:'Engine',description:'XUD9T bolt-on turbo kit + uprated injection pump + intercooler + boost gauge + exhaust. Potential 90–130bhp (up from 70bhp). Full XUD9T engine swap alternative at £200–400.',costMin:300,costMax:600,status:'wishlist'},
+  {id:'m2',name:'Koni STR.T suspension',category:'Suspension',description:'Koni STR.T KST14 kit — matched front shocks + springs, 40mm front drop. Also resolves urgent MOT shock replacements.',costMin:394,costMax:394,status:'planned'},
+  {id:'m3',name:'Private plate GN4RLY',category:'Admin',description:'Check dvlaregistrations.dvla.gov.uk. £80 DVLA transfer fee. Inform insurer when fitted.',costMin:80,costMax:80,status:'wishlist'},
+  {id:'m4',name:'CarPlay / Android Auto head unit',category:'Audio',description:'Single DIN flip-out with wireless CarPlay/Android Auto. Needs ISO harness adaptor + DAB/FM aerial adaptor.',costMin:60,costMax:300,status:'wishlist'},
+  {id:'m5',name:'Full respray — French blue',category:'Bodywork',description:'Find original paint code in engine bay. Full respray including driver door blend. White steelies at same time.',costMin:800,costMax:1500,status:'wishlist'},
+  {id:'m6',name:'DW10 HDi 2.0 swap',category:'Engine',description:'Modern common rail diesel, 90–136bhp. Complex wiring integration. Long-term option only if XUD9 fails.',costMin:1000,costMax:2100,status:'wishlist'},
+  {id:'m7',name:'White steel wheels',category:'Bodywork',description:'4x108 PCD steelies. Clean, prime, rattle can white.',costMin:20,costMax:60,status:'wishlist'},
+];
+
+const DEFAULT_LOG = [
+  {id:'l1',date:'Day 1 — March 2026',entries:[
+    {text:'Car jumped and driven off transporter — engine started first time after 8 years SORN',type:'done'},
+    {text:'Battery removed, topped up with deionised water, placed on charge',type:'done'},
+    {text:'Scuttle tray cleared — 8 years of leaf debris (primary cause of all water ingress)',type:'done'},
+    {text:'Both scuttle drain holes unblocked — confirmed flowing freely',type:'done'},
+    {text:'Large backlog of water drained from driver-side scuttle',type:'done'},
+    {text:'Wet carpet and foam underlay removed from driver-side floor',type:'done'},
+    {text:'Floor inspected — solid, no holes, factory underseal largely intact ✅',type:'done'},
+    {text:'Front seats and centre console removed',type:'done'},
+    {text:'Rust on firewall/inner wing treated with Hammerite blue ✅',type:'done'},
+    {text:'Boot opened by crawling through rear (no rear seats fitted)',type:'done'},
+    {text:'White mould found on seats and door cards — surface mould only, no deep damage',type:'finding'},
+    {text:'Seats in excellent condition under covers — original 306 factory cloth',type:'done'},
+    {text:'Driver side door heavily damaged — replacement needed',type:'finding'},
+    {text:'All 4 tyres perished after 8 years — replacement needed',type:'finding'},
+    {text:'Door locks seized — all 3 doors + boot release disconnected',type:'finding'},
+    {text:'MOT history reviewed — last MOT June 2017 at 81,056 miles (now 84,137)',type:'finding'},
+    {text:'Wiring loom along sills confirmed present and undamaged',type:'done'},
+  ]},
+];
+
+// ══ STATE ══
+let state = {jobs:[],parts:[],mods:[],log:[],photos:[]};
+let currentJobFilter = 'all';
+let editingItem = null;
+let supabaseClient = null;
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('peggy_v3');
+    if (s) { state = Object.assign({jobs:[],parts:[],mods:[],log:[],photos:[]}, JSON.parse(s)); return; }
+  } catch(e){}
+  state = {
+    jobs: JSON.parse(JSON.stringify(DEFAULT_JOBS)),
+    parts: JSON.parse(JSON.stringify(DEFAULT_PARTS)),
+    mods: JSON.parse(JSON.stringify(DEFAULT_MODS)),
+    log: JSON.parse(JSON.stringify(DEFAULT_LOG)),
+    photos: [],
+  };
+  saveState();
+}
+function saveState() { try { localStorage.setItem('peggy_v3', JSON.stringify(state)); } catch(e) { alert('Storage full — try exporting and clearing photos.'); } }
+function uid() { return '_' + Math.random().toString(36).slice(2,9); }
+
+// ══ SUPABASE ══
+function initSupabase() {
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if (url && key && window.supabase) {
+    try { supabaseClient = window.supabase.createClient(url, key); } catch(e) { supabaseClient = null; }
+  }
+  if (!supabaseClient) document.getElementById('sb-banner').classList.remove('hidden');
+}
+function saveSupabase() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if (!url || !key) { alert('Enter both URL and anon key'); return; }
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  initSupabase();
+  if (supabaseClient) { document.getElementById('sb-banner').classList.add('hidden'); alert('Connected!'); }
+}
+const SQL_SCHEMA = `-- Paste in Supabase SQL Editor
+
+create table if not exists jobs (
+  id text primary key, title text,
+  category text, priority text, status text,
+  parts text, cost_min int, cost_max int,
+  actual_cost int, notes text,
+  created_at timestamptz default now()
+);
+create table if not exists parts (
+  id text primary key, name text, spec text,
+  qty int, price text, supplier text,
+  status text, notes text
+);
+create table if not exists mods (
+  id text primary key, name text,
+  category text, description text,
+  cost_min int, cost_max int, status text
+);
+create table if not exists photos (
+  id text primary key, caption text,
+  data_url text,
+  created_at timestamptz default now()
+);`;
+
+// ══ NAVIGATION ══
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const tab = document.querySelector('.tab[data-screen="' + name + '"]');
+  if (tab) tab.classList.add('active');
+  renderScreen(name);
+}
+function renderScreen(name) {
+  if (name==='dash') renderDash();
+  else if (name==='jobs') renderJobs();
+  else if (name==='parts') renderParts();
+  else if (name==='mods') renderMods();
+  else if (name==='log') renderLog();
+  else if (name==='settings') renderSettings();
+}
+function currentScreen() {
+  const s = document.querySelector('.screen.active');
+  return s ? s.id.replace('screen-','') : 'dash';
+}
+
+// ══ DASHBOARD ══
+function renderDash() {
+  const jobs = state.jobs;
+  const done = jobs.filter(j => j.status === 'done');
+  const rem = jobs.filter(j => j.status !== 'done');
+  const critical = rem.filter(j => j.priority === 'critical').length;
+  const urgent = rem.filter(j => j.priority === 'urgent').length;
+
+  document.getElementById('dash-vehicle').innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
+      <div class="dv-row">
+        <div class="dv-stat"><div class="dv-stat-val" style="color:var(--critical)">${critical}</div><div class="dv-stat-lab">Critical</div></div>
+        <div class="dv-stat"><div class="dv-stat-val" style="color:var(--urgent)">${urgent}</div><div class="dv-stat-lab">Urgent</div></div>
+        <div class="dv-stat"><div class="dv-stat-val">${rem.length}</div><div class="dv-stat-lab">Remaining</div></div>
+        <div class="dv-stat"><div class="dv-stat-val" style="color:var(--done)">${done.length}</div><div class="dv-stat-lab">Done</div></div>
+      </div>
+      <div class="dv-detail-grid">
+        <div class="dv-kv"><span class="dv-k">Engine</span><span class="dv-v">1.9D XUD9</span></div>
+        <div class="dv-kv"><span class="dv-k">Gearbox</span><span class="dv-v">Manual 5-spd</span></div>
+        <div class="dv-kv"><span class="dv-k">Purchased</span><span class="dv-v">Mar 2026 · £570</span></div>
+        <div class="dv-kv"><span class="dv-k">MOT expired</span><span class="dv-v">Jun 2018</span></div>
+        <div class="dv-kv"><span class="dv-k">Road tax</span><span class="dv-v" style="color:var(--urgent)">SORN</span></div>
+        <div class="dv-kv"><span class="dv-k">Photos</span><span class="dv-v">${state.photos.length} taken</span></div>
+      </div>
+    </div>`;
+
+  // Budget numbers
+  const estTotal = jobs.reduce((a,j) => a + (j.costMin + j.costMax) / 2, 0);
+  const jobActual = jobs.reduce((a,j) => a + (j.actualCost || 0), 0);
+  const baseCost = 745; // £570 purchase + £175 delivery
+  const actualTotal = jobActual + baseCost;
+  const safetyEst = jobs.filter(j=>j.category==='safety').reduce((a,j)=>a+(j.costMin+j.costMax)/2,0);
+  const mecEst = jobs.filter(j=>j.category==='mechanical').reduce((a,j)=>a+(j.costMin+j.costMax)/2,0);
+  const doneEst = done.reduce((a,j)=>a+(j.costMin+j.costMax)/2,0);
+  const otherEst = jobs.filter(j=>!['safety','mechanical'].includes(j.category)&&j.status!=='done').reduce((a,j)=>a+(j.costMin+j.costMax)/2,0);
+  const sp = v => estTotal > 0 ? (v / estTotal * 100).toFixed(1) : 0;
+  const diff = estTotal - actualTotal;
+  const diffLabel = diff >= 0 ? `£${Math.round(diff).toLocaleString()} under` : `£${Math.round(Math.abs(diff)).toLocaleString()} over`;
+
+  document.getElementById('dash-budget').innerHTML = `
+    <div class="budget-card">
+      <div class="bud-title">Budget tracker</div>
+      <div class="bud-cols">
+        <div class="bud-col">
+          <div class="bud-col-label">Estimated (DIY)</div>
+          <div class="bud-col-total">£${Math.round(estTotal).toLocaleString()}</div>
+          <div class="bud-col-sub">${jobs.length} jobs · midpoint est.</div>
+        </div>
+        <div class="bud-col">
+          <div class="bud-col-label">Actual spent</div>
+          <div class="bud-col-total" style="color:var(--done)">£${Math.round(actualTotal).toLocaleString()}</div>
+          <div class="bud-col-sub">incl. £745 car + delivery</div>
+        </div>
+      </div>
+      <div class="bud-bar-wrap">
+        <div class="bud-seg" style="width:${sp(doneEst)}%;background:var(--done)"></div>
+        <div class="bud-seg" style="width:${sp(safetyEst)}%;background:var(--critical)"></div>
+        <div class="bud-seg" style="width:${sp(mecEst)}%;background:var(--urgent)"></div>
+        <div class="bud-seg" style="width:${sp(otherEst)}%;background:var(--normal)"></div>
+      </div>
+      <div class="bud-legend">
+        <div class="bud-leg-item"><div class="bud-dot" style="background:var(--done)"></div>Done £${Math.round(doneEst)}</div>
+        <div class="bud-leg-item"><div class="bud-dot" style="background:var(--critical)"></div>Safety £${Math.round(safetyEst)}</div>
+        <div class="bud-leg-item"><div class="bud-dot" style="background:var(--urgent)"></div>Mech £${Math.round(mecEst)}</div>
+        <div class="bud-leg-item"><div class="bud-dot" style="background:var(--normal)"></div>Other £${Math.round(otherEst)}</div>
+      </div>
+      <div class="bud-variance">
+        <span>Variance vs estimate</span>
+        <span class="bud-variance-val ${diff>=0?'under':'over'}">${diffLabel} estimate</span>
+      </div>
+    </div>`;
+
+  const urgentJobs = jobs.filter(j => ['critical','urgent'].includes(j.priority) && j.status !== 'done');
+  document.getElementById('dash-urgent').innerHTML = urgentJobs.length === 0
+    ? '<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">All urgent jobs done!</div></div>'
+    : urgentJobs.map(j => jobCard(j)).join('');
+}
+
+// ══ JOBS ══
+const CATS = ['all','safety','mechanical','water','interior','bodywork','security','audio','admin'];
+const CAT_LABELS = {all:'All',safety:'Safety',mechanical:'Mechanical',water:'Water',interior:'Interior',bodywork:'Bodywork',security:'Security',audio:'Audio',admin:'Admin'};
+
+function renderJobs() {
+  const active = state.jobs.filter(j => j.status !== 'done');
+  document.getElementById('jobs-count').textContent = active.length + ' remaining';
+  document.getElementById('jobs-pills').innerHTML = CATS.map(c =>
+    '<div class="pill' + (currentJobFilter===c?' active':'') + '" onclick="setJobFilter(\'' + c + '\')">' + CAT_LABELS[c] + '</div>').join('');
+  const filtered = currentJobFilter === 'all' ? state.jobs : state.jobs.filter(j => j.category === currentJobFilter);
+  const ord = ['critical','urgent','normal','low'];
+  const sorted = [...filtered].sort((a,b) => {
+    const ai = a.status==='done' ? 99 : ord.indexOf(a.priority);
+    const bi = b.status==='done' ? 99 : ord.indexOf(b.priority);
+    return ai - bi;
+  });
+  document.getElementById('jobs-list').innerHTML = sorted.length === 0
+    ? '<div class="empty"><div class="empty-icon">🔧</div><div class="empty-text">No jobs here</div></div>'
+    : sorted.map(j => jobCard(j)).join('');
+}
+
+function setJobFilter(cat) { currentJobFilter = cat; renderJobs(); }
+
+function jobCard(j) {
+  const pc = j.status === 'done' ? 'done' : j.priority;
+  const costStr = j.costMin===j.costMax ? (j.costMin===0?'Free':'£'+j.costMin) : '£'+j.costMin+'–'+j.costMax;
+  const actStr = j.actualCost != null ? '£'+j.actualCost : '';
+  return '<div class="job-card p-' + pc + '" id="card-' + j.id + '">' +
+    '<div class="job-top"><div class="job-title">' + j.title + '</div>' +
+    '<span class="badge ' + pc + '">' + (j.status==='done'?'Done':j.priority.toUpperCase()) + '</span></div>' +
+    '<div class="job-meta">' +
+    '<span class="cat-tag">' + (CAT_LABELS[j.category]||j.category) + '</span>' +
+    (j.costMin>0||j.costMax>0 ? '<span class="job-cost">' + costStr + '</span>' : '') +
+    (actStr ? '<span class="job-cost" style="color:var(--done)">actual: ' + actStr + '</span>' : '') +
+    '</div>' +
+    '<div class="job-expand" id="expand-' + j.id + '">' +
+    (j.parts ? '<div class="job-parts"><strong>Parts needed</strong>' + j.parts + '</div>' : '') +
+    (j.notes ? '<div class="job-notes">' + j.notes + '</div>' : '') +
+    '<div class="job-actual"><label>Actual £</label>' +
+    '<input type="number" placeholder="0" value="' + (j.actualCost||'') + '" onchange="saveActual(\'' + j.id + '\',this.value)" onclick="event.stopPropagation()">' +
+    (actStr ? '<span style="font-size:12px;color:var(--done)">✓</span>' : '') +
+    '</div>' +
+    '<div class="job-actions">' +
+    (j.status!=='done'
+      ? '<button class="jbtn done-btn" onclick="markDone(\'' + j.id + '\',event)">✓ Mark Done</button>'
+      : '<button class="jbtn edit-btn" onclick="undoDone(\'' + j.id + '\',event)">↩ Undo</button>') +
+    '<button class="jbtn edit-btn" onclick="openEditJob(\'' + j.id + '\',event)">Edit</button>' +
+    '<button class="jbtn del-btn" onclick="deleteJob(\'' + j.id + '\',event)">Delete</button>' +
+    '</div></div></div>';
+}
+
+document.addEventListener('click', e => {
+  const card = e.target.closest('.job-card');
+  if (card && !e.target.closest('.jbtn') && e.target.tagName !== 'INPUT') {
+    document.getElementById('expand-' + card.id.replace('card-',''))?.classList.toggle('open');
+  }
+});
+
+function saveActual(id, val) {
+  const j = state.jobs.find(x => x.id === id);
+  if (j) { j.actualCost = val ? parseInt(val) : null; saveState(); }
+}
+function markDone(id, e) {
+  e && e.stopPropagation();
+  const j = state.jobs.find(x => x.id === id);
+  if (j) { j.status='done'; j.priority='done'; saveState(); renderScreen(currentScreen()); }
+}
+function undoDone(id, e) {
+  e && e.stopPropagation();
+  const j = state.jobs.find(x => x.id === id);
+  if (j) { j.status='todo'; j.priority='normal'; saveState(); renderScreen(currentScreen()); }
+}
+function deleteJob(id, e) {
+  e && e.stopPropagation();
+  if (!confirm('Delete this job?')) return;
+  state.jobs = state.jobs.filter(j => j.id !== id);
+  saveState(); renderScreen(currentScreen());
+}
+
+// ══ PARTS ══
+const PSTATS = ['needed','ordered','arrived','fitted'];
+const PSTAT_LABELS = {needed:'Needed',ordered:'Ordered',arrived:'Arrived',fitted:'Fitted ✓'};
+
+function renderParts() {
+  const outstanding = state.parts.filter(p => p.status !== 'fitted');
+  document.getElementById('parts-count').textContent = outstanding.length + ' to get';
+  const groups = {needed:[],ordered:[],arrived:[],fitted:[]};
+  state.parts.forEach(p => { if (groups[p.status]) groups[p.status].push(p); });
+  let html = '';
+  PSTATS.forEach(s => {
+    if (!groups[s].length) return;
+    html += '<div class="parts-group-title">' + PSTAT_LABELS[s] + ' (' + groups[s].length + ')</div>';
+    groups[s].forEach(p => {
+      html += '<div class="part-card" id="pc-' + p.id + '">' +
+        '<div class="part-card-header" onclick="togglePart(\'' + p.id + '\')">' +
+        '<div class="part-status-dot ' + p.status + '"></div>' +
+        '<div class="part-info">' +
+        '<div class="part-name">' + p.name + '</div>' +
+        (p.spec ? '<div class="part-spec">' + p.spec + '</div>' : '') +
+        (p.supplier ? '<div class="part-supplier">' + p.supplier + '</div>' : '') +
+        '</div>' +
+        '<div class="part-price-badge">' + p.price + '</div>' +
+        '</div>' +
+        '<div class="part-expand" id="pe-' + p.id + '">' +
+        '<div class="part-notes-text">' + (p.notes || 'No notes added.') + '</div>' +
+        '<div class="part-expand-label">Update status</div>' +
+        '<div class="part-status-btns">' +
+        PSTATS.map(st => '<button class="psb' + (p.status===st?' a-'+st:'') + '" onclick="setPartStatus(\'' + p.id + '\',\'' + st + '\',event)">' + PSTAT_LABELS[st] + '</button>').join('') +
+        '</div>' +
+        '<div class="part-actions">' +
+        '<button class="jbtn edit-btn" onclick="openEditPart(\'' + p.id + '\',event)">Edit</button>' +
+        '<button class="jbtn del-btn" onclick="deletePart(\'' + p.id + '\',event)">Delete</button>' +
+        '</div></div></div>';
+    });
+  });
+  document.getElementById('parts-list').innerHTML = html || '<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">No parts yet</div></div>';
+}
+
+function togglePart(id) { document.getElementById('pe-'+id)?.classList.toggle('open'); }
+function setPartStatus(id, status, e) {
+  e && e.stopPropagation();
+  const p = state.parts.find(x => x.id === id);
+  if (p) { p.status = status; saveState(); renderParts(); }
+}
+function deletePart(id, e) {
+  e && e.stopPropagation();
+  if (!confirm('Delete this part?')) return;
+  state.parts = state.parts.filter(p => p.id !== id);
+  saveState(); renderParts();
+}
+
+// ══ MODS ══
+const MSTATS = ['wishlist','planned','ordered','fitted'];
+const MSTAT_COLORS = {wishlist:'var(--text3)',planned:'var(--normal)',ordered:'var(--urgent)',fitted:'var(--done)'};
+function renderMods() {
+  document.getElementById('mods-count').textContent = state.mods.length;
+  document.getElementById('mods-list').innerHTML = state.mods.map(m => {
+    const c = m.costMin===m.costMax ? '£'+m.costMin.toLocaleString() : '£'+m.costMin.toLocaleString()+'–£'+m.costMax.toLocaleString();
+    return '<div class="mod-card"><div class="mod-top"><div><div class="mod-name">'+m.name+'</div><div class="mod-cat">'+m.category+'</div></div><div class="mod-cost">'+c+'</div></div><div class="mod-desc">'+m.description+'</div><button class="mod-status-btn" style="color:'+MSTAT_COLORS[m.status]+';border-color:'+MSTAT_COLORS[m.status]+'44" onclick="cycleMod(\''+m.id+'\')">'+m.status.toUpperCase()+' →</button></div>';
+  }).join('') || '<div class="empty"><div class="empty-icon">⚡</div><div class="empty-text">No mods planned</div></div>';
+}
+function cycleMod(id) {
+  const m = state.mods.find(x => x.id === id);
+  if (m) { m.status = MSTATS[(MSTATS.indexOf(m.status)+1) % MSTATS.length]; saveState(); renderMods(); }
+}
+
+// ══ PHOTOS ══
+function handlePhotos(files) {
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      state.photos.unshift({
+        id: uid(), caption: '',
+        dataUrl: e.target.result,
+        date: new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}),
+      });
+      saveState(); renderLog();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function deletePhoto(id) {
+  if (!confirm('Delete this photo?')) return;
+  state.photos = state.photos.filter(p => p.id !== id);
+  saveState(); renderLog();
+}
+function updateCaption(id, val) {
+  const p = state.photos.find(x => x.id === id);
+  if (p) { p.caption = val; saveState(); }
+}
+
+// ══ LOG ══
+function renderLog() {
+  document.getElementById('photos-count').textContent = state.photos.length + ' photos';
+  document.getElementById('photo-grid').innerHTML = state.photos.map(p =>
+    '<div class="photo-card">' +
+    '<img class="photo-img" src="' + p.dataUrl + '" alt="progress photo">' +
+    '<div class="photo-footer">' +
+    '<textarea class="photo-caption-input" rows="2" placeholder="Add a caption..." onchange="updateCaption(\'' + p.id + '\',this.value)">' + (p.caption||'') + '</textarea>' +
+    '<div class="photo-meta"><span class="photo-date">' + (p.date||'') + '</span>' +
+    '<button class="photo-del" onclick="deletePhoto(\'' + p.id + '\')">✕ Delete</button></div>' +
+    '</div></div>'
+  ).join('');
+
+  document.getElementById('log-count').textContent = state.log.length + ' entries';
+  document.getElementById('log-list').innerHTML = state.log.map(entry =>
+    '<div class="log-entry"><div class="log-dot">✓</div><div class="log-content">' +
+    '<div class="log-day">' + entry.date + '</div>' +
+    entry.entries.map(e => '<div class="log-item ' + (e.type||'done') + '">' + e.text + '</div>').join('') +
+    '</div></div>'
+  ).join('') || '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No log entries yet</div></div>';
+}
+
+// ══ SETTINGS ══
+function renderSettings() {
+  document.getElementById('sb-url').value = localStorage.getItem('sb_url') || '';
+  document.getElementById('sb-key').value = localStorage.getItem('sb_key') || '';
+  document.getElementById('sql-box').textContent = SQL_SCHEMA;
+}
+function copySQL() { navigator.clipboard.writeText(SQL_SCHEMA).then(() => alert('SQL copied!')).catch(()=>{}); }
+function exportData() {
+  const b = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'peggy_data.json'; a.click();
+}
+function resetData() {
+  if (!confirm('Reset all data to defaults? Photos will be lost.')) return;
+  localStorage.removeItem('peggy_v3'); loadState(); renderDash(); alert('Data reset.');
+}
+
+// ══ MODAL ══
+function openModal(title, html) {
+  document.getElementById('modal-title-text').textContent = title;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingItem = null;
+}
+
+// JOBS modal
+function openAddJob() { editingItem = null; openModal('Add Job', jobForm({})); }
+function openEditJob(id, e) {
+  e && e.stopPropagation();
+  editingItem = state.jobs.find(j => j.id === id);
+  openModal('Edit Job', jobForm(editingItem || {}));
+}
+function jobForm(j) {
+  return '<div class="form-field"><label class="form-label">Title</label><input class="form-input" id="f-title" value="' + (j.title||'') + '" placeholder="e.g. Replace cambelt"></div>' +
+    '<div class="form-row">' +
+    '<div class="form-field"><label class="form-label">Category</label><select class="form-select" id="f-cat">' +
+    ['safety','mechanical','water','interior','bodywork','security','audio','admin'].map(c => '<option value="'+c+'"'+(j.category===c?' selected':'')+'>'+CAT_LABELS[c]+'</option>').join('') +
+    '</select></div>' +
+    '<div class="form-field"><label class="form-label">Priority</label><select class="form-select" id="f-pri">' +
+    ['critical','urgent','normal','low'].map(p => '<option value="'+p+'"'+(j.priority===p?' selected':'')+'>'+p.toUpperCase()+'</option>').join('') +
+    '</select></div></div>' +
+    '<div class="form-row">' +
+    '<div class="form-field"><label class="form-label">Est. min £</label><input class="form-input" id="f-cmin" type="number" value="'+(j.costMin||0)+'"></div>' +
+    '<div class="form-field"><label class="form-label">Est. max £</label><input class="form-input" id="f-cmax" type="number" value="'+(j.costMax||0)+'"></div></div>' +
+    '<div class="form-field"><label class="form-label">Actual cost £</label><input class="form-input" id="f-actual" type="number" value="'+(j.actualCost||'')+'" placeholder="Enter when complete"></div>' +
+    '<div class="form-field"><label class="form-label">Parts needed</label><input class="form-input" id="f-parts" value="'+(j.parts||'')+'" placeholder="Part names, suppliers..."></div>' +
+    '<div class="form-field"><label class="form-label">Notes</label><textarea class="form-textarea" id="f-notes">'+(j.notes||'')+'</textarea></div>' +
+    '<button class="form-submit" onclick="saveJob()">Save Job</button>';
+}
+function saveJob() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { alert('Please enter a title'); return; }
+  const job = {
+    id: editingItem ? editingItem.id : uid(),
+    title, category: document.getElementById('f-cat').value,
+    priority: document.getElementById('f-pri').value,
+    status: editingItem ? editingItem.status : 'todo',
+    parts: document.getElementById('f-parts').value.trim(),
+    costMin: parseInt(document.getElementById('f-cmin').value) || 0,
+    costMax: parseInt(document.getElementById('f-cmax').value) || 0,
+    actualCost: document.getElementById('f-actual').value ? parseInt(document.getElementById('f-actual').value) : null,
+    notes: document.getElementById('f-notes').value.trim(),
+  };
+  if (editingItem) { const i = state.jobs.findIndex(j => j.id === editingItem.id); state.jobs[i] = job; }
+  else state.jobs.unshift(job);
+  saveState();
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingItem = null;
+  renderScreen(currentScreen());
+}
+
+// PARTS modal
+function openAddPart() { editingItem = null; openModal('Add Part', partForm({})); }
+function openEditPart(id, e) {
+  e && e.stopPropagation();
+  editingItem = state.parts.find(p => p.id === id);
+  openModal('Edit Part', partForm(editingItem || {}));
+}
+function partForm(p) {
+  return '<div class="form-field"><label class="form-label">Part name</label><input class="form-input" id="fp-name" value="'+(p.name||'')+'" placeholder="e.g. CV gaiter kit"></div>' +
+    '<div class="form-field"><label class="form-label">Spec / part number</label><input class="form-input" id="fp-spec" value="'+(p.spec||'')+'" placeholder="Size, type, part number..."></div>' +
+    '<div class="form-row">' +
+    '<div class="form-field"><label class="form-label">Price</label><input class="form-input" id="fp-price" value="'+(p.price||'')+'" placeholder="£20"></div>' +
+    '<div class="form-field"><label class="form-label">Qty</label><input class="form-input" id="fp-qty" type="number" value="'+(p.qty||1)+'"></div></div>' +
+    '<div class="form-field"><label class="form-label">Supplier</label><input class="form-input" id="fp-supplier" value="'+(p.supplier||'')+'" placeholder="Euro Car Parts, eBay..."></div>' +
+    '<div class="form-field"><label class="form-label">Notes</label><textarea class="form-textarea" id="fp-notes">'+(p.notes||'')+'</textarea></div>' +
+    '<div class="form-field"><label class="form-label">Status</label><select class="form-select" id="fp-status">' +
+    PSTATS.map(s => '<option value="'+s+'"'+((p.status||'needed')===s?' selected':'')+'>'+PSTAT_LABELS[s]+'</option>').join('') +
+    '</select></div>' +
+    '<button class="form-submit" onclick="savePart()">Save Part</button>';
+}
+function savePart() {
+  const name = document.getElementById('fp-name').value.trim();
+  if (!name) { alert('Enter a part name'); return; }
+  const part = {
+    id: editingItem ? editingItem.id : uid(), name,
+    spec: document.getElementById('fp-spec').value.trim(),
+    price: document.getElementById('fp-price').value.trim(),
+    qty: parseInt(document.getElementById('fp-qty').value) || 1,
+    supplier: document.getElementById('fp-supplier').value.trim(),
+    notes: document.getElementById('fp-notes').value.trim(),
+    status: document.getElementById('fp-status').value,
+  };
+  if (editingItem) { const i = state.parts.findIndex(p => p.id === editingItem.id); state.parts[i] = part; }
+  else state.parts.unshift(part);
+  saveState();
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingItem = null;
+  renderParts();
+}
+
+// MODS modal
+function openAddMod() {
+  openModal('Add Mod',
+    '<div class="form-field"><label class="form-label">Name</label><input class="form-input" id="fm-name" placeholder="e.g. Turbo conversion"></div>' +
+    '<div class="form-field"><label class="form-label">Category</label><input class="form-input" id="fm-cat" placeholder="Engine, Suspension, Audio..."></div>' +
+    '<div class="form-row">' +
+    '<div class="form-field"><label class="form-label">Min £</label><input class="form-input" id="fm-min" type="number" value="0"></div>' +
+    '<div class="form-field"><label class="form-label">Max £</label><input class="form-input" id="fm-max" type="number" value="0"></div></div>' +
+    '<div class="form-field"><label class="form-label">Description</label><textarea class="form-textarea" id="fm-desc"></textarea></div>' +
+    '<button class="form-submit" onclick="saveMod()">Save Mod</button>');
+}
+function saveMod() {
+  const name = document.getElementById('fm-name').value.trim();
+  if (!name) { alert('Enter a name'); return; }
+  state.mods.unshift({
+    id: uid(), name,
+    category: document.getElementById('fm-cat').value.trim(),
+    description: document.getElementById('fm-desc').value.trim(),
+    costMin: parseInt(document.getElementById('fm-min').value) || 0,
+    costMax: parseInt(document.getElementById('fm-max').value) || 0,
+    status: 'wishlist',
+  });
+  saveState();
+  document.getElementById('modal-overlay').classList.remove('open');
+  renderMods();
+}
+
+// ══ INIT ══
+loadState();
+initSupabase();
+renderDash();
+</script>
+</body>
+</html>
